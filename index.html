@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>팥빙수 구매자 추첨(동전 던지기)</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --container-bg: #ffffff;
+            --accent: #ff9800;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: var(--container-bg);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 350px;
+        }
+
+        h1, .subtitle { 
+            font-size: 1.8rem; 
+            color: #333; 
+            margin: 0;
+            padding: 5px 0;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            margin-bottom: 20px;
+        }
+
+        .coin-container {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 40px auto;
+            perspective: 1000px;
+        }
+
+        .coin {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            /* 기존 1.5초에서 3.3초로 수정 (결과 화면으로 전환될 때의 부드러운 속도) */
+            transition: transform 3.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .coin div {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .coin img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .side-a { z-index: 2; }
+        .side-b { transform: rotateY(180deg); }
+
+        .flipping {
+            /* 한 바퀴 도는 애니메이션 속도를 살짝 조절하여 3.3초 동안 연속으로 돌게 만듭니다 */
+            animation: flip-animation 0.25s infinite linear;
+        }
+
+        @keyframes flip-animation {
+            0% { transform: rotateY(0); }
+            100% { transform: rotateY(360deg); }
+        }
+
+        .btn-toss {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn-toss:hover { background: #e68a00; transform: translateY(-2px); }
+        .btn-toss:disabled { background: #ccc; cursor: not-allowed; }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+        }
+
+        .history {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            max-height: 100px;
+            overflow-y: auto;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🍧 팥빙수 구매자 추첨! 🍧</h1>
+    <div class="subtitle">동전 던지기 이벤트!</div>
+
+    <div class="coin-container">
+        <div class="coin" id="coin">
+            <div class="side-a">
+                <img src="heads.png" alt="앞면">
+            </div>
+            <div class="side-b">
+                <img src="tails.png" alt="뒷면">
+            </div>
+        </div>
+    </div>
+
+    <button class="btn-toss" id="tossBtn" onclick="tossCoin()">운명의 결과 확인!</button>
+
+    <div class="stats">
+        <div>앞면(학): <b id="h-count">0</b></div>
+        <div>뒷면(500): <b id="t-count">0</b></div>
+    </div>
+
+    <div class="history" id="historyList">
+        추첨 기록이 여기에 표시됩니다.
+    </div>
+</div>
+
+<script>
+    let hCount = 0;
+    let tCount = 0;
+    const coin = document.getElementById('coin');
+    const btn = document.getElementById('tossBtn');
+
+    // 1. 오디오 객체 생성 및 파일명 지정 (같은 폴더에 있는 flip_sound.mp3)
+    const coinFlipSound = new Audio('flip_sound.mp3');
+
+    function tossCoin() {
+        btn.disabled = true;
+        coin.classList.add('flipping');
+
+        // 2. 동전 던지기 시작할 때 소리 재생 코드 실행
+        coinFlipSound.currentTime = 0; // 연속 재생 시 처음 위치로 초기화
+        coinFlipSound.play().catch(error => {
+            console.error("오디오 재생 실패 원인:", error);
+            alert("소리 재생에 실패했습니다. 마우스로 화면을 한 번 클릭한 뒤 다시 시도해 주세요!");
+        });
+
+        // 기존 1200ms(1.2초)에서 2000ms(2초)로 대기 시간 변경
+        setTimeout(() => {
+            coin.classList.remove('flipping');
+            const isHeads = Math.random() < 0.5;
+            
+            if (isHeads) {
+                coin.style.transform = 'rotateY(0deg)';
+                hCount++;
+                document.getElementById('h-count').innerText = hCount;
+                updateHistory("결과: 앞면 (학)");
+            } else {
+                coin.style.transform = 'rotateY(180deg)';
+                tCount++;
+                document.getElementById('t-count').innerText = tCount;
+                updateHistory("결과: 뒷면 (500)");
+            }
+
+            btn.disabled = false;
+        }, 2000); 
+    }
+
+    function updateHistory(result) {
+        const list = document.getElementById('historyList');
+        if(list.innerText.includes("추첨 기록이")) list.innerText = "";
+        const entry = document.createElement('div');
+        entry.innerText = `[${new Date().toLocaleTimeString()}] ${result}`;
+        list.prepend(entry);
+    }
+</script>
+
+</body>
+</html>
