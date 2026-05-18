@@ -30,7 +30,6 @@
             width: 350px;
         }
 
-        /* 두 제목 모두 동일한 크기로 설정 */
         h1, .subtitle { 
             font-size: 1.8rem; 
             color: #333; 
@@ -40,7 +39,7 @@
         }
 
         .subtitle {
-            margin-bottom: 20px; /* 동전과의 간격 */
+            margin-bottom: 20px;
         }
 
         .coin-container {
@@ -55,7 +54,8 @@
             height: 100%;
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            /* 기존 1.5초에서 3.3초로 수정 (결과 화면으로 전환될 때의 부드러운 속도) */
+            transition: transform 3.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .coin div {
@@ -78,7 +78,8 @@
         .side-b { transform: rotateY(180deg); }
 
         .flipping {
-            animation: flip-animation 0.2s infinite linear;
+            /* 한 바퀴 도는 애니메이션 속도를 살짝 조절하여 3.3초 동안 연속으로 돌게 만듭니다 */
+            animation: flip-animation 0.25s infinite linear;
         }
 
         @keyframes flip-animation {
@@ -123,7 +124,7 @@
 <body>
 
 <div class="container">
-    <h1>🍧 팥빙수 구매자 추첨 🍧</h1>
+    <h1>🍧 팥빙수 구매자 추첨</h1>
     <div class="subtitle">동전 던지기 이벤트</div>
 
     <div class="coin-container">
@@ -155,10 +156,21 @@
     const coin = document.getElementById('coin');
     const btn = document.getElementById('tossBtn');
 
+    // 1. 오디오 객체 생성 및 파일명 지정 (같은 폴더에 있는 flip_sound.mp3)
+    const coinFlipSound = new Audio('flip_sound.mp3');
+
     function tossCoin() {
         btn.disabled = true;
         coin.classList.add('flipping');
 
+        // 2. 동전 던지기 시작할 때 소리 재생 코드 실행
+        coinFlipSound.currentTime = 0; // 연속 재생 시 처음 위치로 초기화
+        coinFlipSound.play().catch(error => {
+            console.error("오디오 재생 실패 원인:", error);
+            alert("소리 재생에 실패했습니다. 마우스로 화면을 한 번 클릭한 뒤 다시 시도해 주세요!");
+        });
+
+        // 기존 1200ms(1.2초)에서 2000ms(2초)로 대기 시간 변경
         setTimeout(() => {
             coin.classList.remove('flipping');
             const isHeads = Math.random() < 0.5;
@@ -176,7 +188,7 @@
             }
 
             btn.disabled = false;
-        }, 1200);
+        }, 2000); 
     }
 
     function updateHistory(result) {
